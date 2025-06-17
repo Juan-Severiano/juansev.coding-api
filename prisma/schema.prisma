@@ -1,0 +1,119 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  owner
+  commun
+}
+
+model User {
+  id       String   @id @default(uuid()) @db.Uuid
+  username String   @unique
+  name     String
+  email    String   @unique
+  password String
+  role     UserRole
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Owner {
+  id    String @id @default(uuid()) @db.Uuid
+  name  String
+  email String
+  phone String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Certificates {
+  id          String @id @default(uuid()) @db.Uuid
+  title       String
+  description String
+  platform    String
+  url         String
+  workload    Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Attach {
+  id   String @id @default(uuid()) @db.Uuid
+  path String @unique
+  type String
+
+  // Relações
+  companiesPhoto Company[]
+  projectsCover  Project[] @relation("Cover In Project")
+  projectsPhoto  Project[] @relation("Photo In Project")
+  projectsImages Project[] @relation("ProjectImages")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Links {
+  id        String   @id @default(uuid()) @db.Uuid
+  github    String
+  figma     String
+  publicUrl String
+  Project   Project?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Company {
+  id          String    @id @default(uuid()) @db.Uuid
+  name        String
+  description String
+  startDate   DateTime
+  endDate     DateTime?
+
+  responsibleName String
+  responsibleRole String
+
+  photoId String @db.Uuid
+  photo   Attach @relation(fields: [photoId], references: [id])
+
+  projects Project[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Project {
+  id               String   @id @default(uuid()) @db.Uuid
+  name             String   @unique
+  slug             String   @unique
+  shortDescription String
+  description      String
+  skills           String[]
+
+  linksId String @unique @db.Uuid
+  links   Links  @relation(fields: [linksId], references: [id])
+
+  companyId String?  @db.Uuid
+  company   Company? @relation(fields: [companyId], references: [id])
+
+  coverId String @db.Uuid
+  cover   Attach @relation(name: "Cover In Project", fields: [coverId], references: [id])
+
+  photoId String @db.Uuid
+  photo   Attach @relation(name: "Photo In Project", fields: [photoId], references: [id])
+
+  images Attach[] @relation("ProjectImages")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

@@ -7,7 +7,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     super({
       datasources: {
         db: {
-          url: process.env.DATABASE_URL,
+          url: "postgres://avnadmin:AVNS_GUnL08C1xFLbW4E64RG@pg-27677120-juansev.d.aivencloud.com:25507/juancoding?sslmode=require",
         },
       },
       log: ['query', 'info', 'warn', 'error'],

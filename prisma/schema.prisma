@@ -8,58 +8,47 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum UserRole {
-  owner
-  commun
-}
-
 model User {
-  id       String   @id @default(uuid()) @db.Uuid
-  username String   @unique
-  name     String
-  email    String   @unique
-  password String
-  role     UserRole
-
+  id        String   @id @default(uuid()) @db.Uuid
+  username  String   @unique
+  name      String
+  email     String   @unique
+  password  String
+  role      UserRole
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model Owner {
-  id    String @id @default(uuid()) @db.Uuid
-  name  String
-  email String
-  phone String
-
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  email     String
+  phone     String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model Certificates {
-  id          String @id @default(uuid()) @db.Uuid
+  id          String   @id @default(uuid()) @db.Uuid
   title       String
   description String
   platform    String
   url         String
   workload    Int
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Attach {
-  id   String @id @default(uuid()) @db.Uuid
-  path String @unique
-  type String
-
-  // Relações
+  id             String    @id @default(uuid()) @db.Uuid
+  path           String    @unique
+  type           String
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
   companiesPhoto Company[]
   projectsCover  Project[] @relation("Cover In Project")
   projectsPhoto  Project[] @relation("Photo In Project")
   projectsImages Project[] @relation("ProjectImages")
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }
 
 model Links {
@@ -67,29 +56,24 @@ model Links {
   github    String
   figma     String
   publicUrl String
-  Project   Project?
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  Project   Project?
 }
 
 model Company {
-  id          String    @id @default(uuid()) @db.Uuid
-  name        String
-  description String
-  startDate   DateTime
-  endDate     DateTime?
-
+  id              String    @id @default(uuid()) @db.Uuid
+  name            String
+  description     String
+  startDate       DateTime
+  endDate         DateTime?
   responsibleName String
   responsibleRole String
-
-  photoId String @db.Uuid
-  photo   Attach @relation(fields: [photoId], references: [id])
-
-  projects Project[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  photoId         String    @db.Uuid
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  photo           Attach    @relation(fields: [photoId], references: [id])
+  projects        Project[]
 }
 
 model Project {
@@ -99,21 +83,20 @@ model Project {
   shortDescription String
   description      String
   skills           String[]
+  linksId          String   @unique @db.Uuid
+  companyId        String?  @db.Uuid
+  coverId          String   @db.Uuid
+  photoId          String   @db.Uuid
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  company          Company? @relation(fields: [companyId], references: [id])
+  cover            Attach   @relation("Cover In Project", fields: [coverId], references: [id])
+  links            Links    @relation(fields: [linksId], references: [id])
+  photo            Attach   @relation("Photo In Project", fields: [photoId], references: [id])
+  images           Attach[] @relation("ProjectImages")
+}
 
-  linksId String @unique @db.Uuid
-  links   Links  @relation(fields: [linksId], references: [id])
-
-  companyId String?  @db.Uuid
-  company   Company? @relation(fields: [companyId], references: [id])
-
-  coverId String @db.Uuid
-  cover   Attach @relation(name: "Cover In Project", fields: [coverId], references: [id])
-
-  photoId String @db.Uuid
-  photo   Attach @relation(name: "Photo In Project", fields: [photoId], references: [id])
-
-  images Attach[] @relation("ProjectImages")
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+enum UserRole {
+  owner
+  commun
 }

@@ -5,40 +5,49 @@ import {
   Post,
   Body,
   Delete,
-  ParseIntPipe,
   Patch,
+  Query,
+  ParseIntPipe,
+  DefaultValuePipe,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create';
+import { UpdateUserDto } from './dto/update';
 
-@Controller()
+@Controller('users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Post('user')
-  async signupUser(@Body() userData: CreateUserDto) {
+  @Post()
+  async create(@Body() userData: CreateUserDto) {
     return this.userService.create(userData);
   }
 
-  @Get('user')
-  async getUsers() {
-    return this.userService.users();
+  @Get()
+  async getAll(
+    @Query('page', new DefaultValuePipe(1), new ParseIntPipe()) page: number,
+    @Query('limit', new DefaultValuePipe(10), new ParseIntPipe()) limit: number,
+  ) {
+    return this.userService.getAll({ page, limit });
   }
 
-  @Get('user/:id')
-  async getUser(@Param('id') id: string) {
-    return this.userService.user({ id })
+  @Get(':id')
+  async getById(@Param('id') id: string) {
+    return this.userService.getById(id);
   }
 
-  @Patch('user/:id')
-  async updateUser(@Param('id') id: string, @Body() userData: CreateUserDto) {
-    return this.userService.update({ where: { id }, data: userData })
+  @Get('username/:username')
+  async getByUsername(@Param('username') username: string) {
+    return this.userService.getByUsername(username);
   }
 
-  @Delete('user/:id')
-  async deleteUser(@Param('id') id: string) {
-    return this.userService.delete({
-      id,
-    });
+  @Patch(':id')
+  async update(@Param('id') id: string, @Body() userData: UpdateUserDto) {
+    return this.userService.update(id, userData);
+  }
+
+  @Delete(':id')
+  async delete(@Param('id') id: string) {
+    return this.userService.delete(id);
   }
 }

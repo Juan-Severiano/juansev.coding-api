@@ -25,7 +25,7 @@ export class AuthService {
   constructor(
     private userService: UserService,
     private jwtService: JwtService,
-  ) { }
+  ) {}
 
   async authenticate(input: LoginAuthDTO): Promise<AuthResult> {
     const user = await this.validate(input);
@@ -37,15 +37,17 @@ export class AuthService {
   }
 
   async validate(input: LoginAuthDTO) {
-    const user = await this.userService.findByEmail(input.email);
-    console.log(user)
+    const user = await this.userService.getByEmail(input.email);
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials aaaa');
+      throw new UnauthorizedException('Invalid credentials');
     }
 
-    const isPasswordValid = await this.comparePassword(input.password, user.password);
+    const isPasswordValid = await this.comparePassword(
+      input.password,
+      user.password,
+    );
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials 2');
+      throw new UnauthorizedException('Invalid credentials');
     }
 
     return user;
@@ -55,7 +57,7 @@ export class AuthService {
     const tokenPayload: JwtPayload = {
       sub: user.id,
       email: user.email,
-      role: user.role
+      role: user.role,
     };
 
     const access = await this.jwtService.signAsync(tokenPayload);
@@ -105,9 +107,15 @@ export class AuthService {
     });
   }
 
-  private async comparePassword(password: string, hash: string): Promise<boolean> {
+  private async comparePassword(
+    password: string,
+    hash: string,
+  ): Promise<boolean> {
     if (!hash.includes(':')) {
-      const hashedPassword = crypto.createHash('sha256').update(password).digest('hex');
+      const hashedPassword = crypto
+        .createHash('sha256')
+        .update(password)
+        .digest('hex');
       return hashedPassword === hash;
     }
 

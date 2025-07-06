@@ -1,6 +1,7 @@
 import {
   ConflictException,
   Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import * as crypto from 'node:crypto';
@@ -10,27 +11,47 @@ import { Prisma, User } from 'generated/prisma';
 export class UserService {
   constructor(private prisma: PrismaService) {}
 
-  async user(
-    userWhereUniqueInput: Prisma.UserWhereUniqueInput,
+  async getById(
+    id: string,
   ): Promise<Omit<User, 'password'> | null> {
     const user = await this.prisma.user.findUnique({
-      where: userWhereUniqueInput,
+      where: { id },
     });
-    if (user) {
-      const { password, ...userWithoutPassword } = user;
-      return userWithoutPassword;
+
+    if (!user) {
+      throw new NotFoundException('User not found');
     }
-    return null;
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...userWithoutPassword } = user;
+    return userWithoutPassword;
   }
 
-  async users(): Promise<Omit<User, 'password'>[]> {
-    const users = await this.prisma.user.findMany();
-    return users.map(
-      ({ password, ...userWithoutPassword }) => userWithoutPassword,
-    );
+  async getAll(params: {
+    page?: number;
+    limit?: number;
+  }) {
+    const { page = 1, limit = 10 } = params;
+    const skip = (page - 1) * limit;
+    const users = await this.prisma.user.findMany({
+      skip,
+      take: limit,
+    });
+    const totalUsers = await this.prisma.user.count();
+    const hasNextPage = skip + users.length < totalUsers;
+
+    return {
+        data: users.map(
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            ({ password, ...userWithoutPassword }) => userWithoutPassword,
+        ),
+        page,
+        limit,
+        next: hasNextPage
+    };
   }
 
-  async create(data: Prisma.UserCreateInput) {
+  async create(data: Prisma.UserCreateInput): Promise<Omit<User, 'password'>> {
     const possibleUserWithEmail = await this.prisma.user.findFirst({
       where: {
         email: data.email,
@@ -38,9 +59,7 @@ export class UserService {
     });
 
     if (possibleUserWithEmail) {
-      return new ConflictException({
-        message: 'User with same email already exists',
-      });
+      throw new ConflictException('User with same email already exists');
     }
 
     const hashedPassword = crypto
@@ -54,15 +73,12 @@ export class UserService {
       },
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...userWithoutPassword } = user;
     return userWithoutPassword;
   }
 
-  async update(params: {
-    where: Prisma.UserWhereUniqueInput;
-    data: Prisma.UserUpdateInput;
-  }): Promise<Omit<User, 'password'>> {
-    const { where, data } = params;
+  async update(id: string, data: Prisma.UserUpdateInput): Promise<Omit<User, 'password'>> {
     if (data.password) {
       data.password = crypto
         .createHash('sha256')
@@ -72,31 +88,43 @@ export class UserService {
 
     const user = await this.prisma.user.update({
       data,
-      where,
+      where: { id },
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...userWithoutPassword } = user;
     return userWithoutPassword;
   }
 
-  async delete(
-    where: Prisma.UserWhereUniqueInput,
-  ): Promise<Omit<User, 'password'>> {
+  async delete(id: string): Promise<Omit<User, 'password'>> {
     const user = await this.prisma.user.delete({
-      where,
+      where: { id },
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...userWithoutPassword } = user;
     return userWithoutPassword;
   }
 
-  async findByEmail(email: string) {
-    const user = this.prisma.user.findUnique({
+  async getByEmail(email: string): Promise<User | null> {
+    return this.prisma.user.findUnique({
       where: {
         email
       }
-    })
+    });
+  }
 
-    return user
+  async getByUsername(username: string): Promise<Omit<User, 'password'> | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { username },
+    });
+
+    if (!user) {
+      return null;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...userWithoutPassword } = user;
+    return userWithoutPassword;
   }
 }
